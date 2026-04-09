@@ -1,0 +1,1 @@
+UPDATE services SET is_active = true WHERE name = 'Método Essentia';

@@ -1,0 +1,84 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Lato:wght@300;400;700&family=Comfortaa:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 36 33% 94%;
+    --foreground: 0 0% 29%;
+
+    --card: 60 20% 97%;
+    --card-foreground: 0 0% 29%;
+
+    --popover: 36 33% 94%;
+    --popover-foreground: 0 0% 29%;
+
+    --primary: 126 9% 52%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 22 35% 74%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 60 20% 97%;
+    --muted-foreground: 0 0% 45%;
+
+    --accent: 22 35% 74%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 36 20% 85%;
+    --input: 36 20% 85%;
+    --ring: 126 9% 52%;
+
+    --radius: 0.75rem;
+
+    --olive: 126 9% 52%;
+    --olive-dark: 126 12% 42%;
+    --beige: 36 33% 94%;
+    --beige-alt: 60 20% 97%;
+    --blush: 22 35% 74%;
+    --blush-light: 22 40% 88%;
+    --charcoal: 0 0% 29%;
+
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-body: 'Lato', 'Helvetica Neue', sans-serif;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-body);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
