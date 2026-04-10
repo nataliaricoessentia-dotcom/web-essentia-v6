@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Quote, Pencil, Video, FileText } from "lucide-react";
+import { Plus, Trash2, Quote, Pencil, Video, FileText, Eye, EyeOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Testimonial {
@@ -32,16 +32,22 @@ const AdminTestimonials = () => {
   const [newRole, setNewRole] = useState("");
   const [newText, setNewText] = useState("");
   const [newVideo, setNewVideo] = useState("");
+const [sectionVisible, setSectionVisible] = useState(true);
+const [savingSection, setSavingSection] = useState(false);
+ const fetchTestimonials = async () => {
+  const [{ data: testimonialsData }, { data: sectionData }] = await Promise.all([
+    supabase.from("testimonials").select("*").order("display_order"),
+    supabase
+      .from("section_settings")
+      .select("is_visible")
+      .eq("section_key", "testimonials")
+      .maybeSingle(),
+  ]);
 
-  const fetchTestimonials = async () => {
-    const { data } = await supabase
-      .from("testimonials")
-      .select("*")
-      .order("display_order");
-
-    setTestimonials(data || []);
-    setLoading(false);
-  };
+  setTestimonials(testimonialsData || []);
+  setSectionVisible(sectionData?.is_visible ?? true);
+  setLoading(false);
+};
 
   useEffect(() => {
     fetchTestimonials();
@@ -198,24 +204,34 @@ const AdminTestimonials = () => {
     await fetchTestimonials();
   };
 
-  const toggleActive = async (id: string, current: boolean) => {
-    const { error } = await supabase
-      .from("testimonials")
-      .update({ is_active: !current })
-      .eq("id", id);
+  const toggleSectionVisibility = async () => {
+  setSavingSection(true);
 
-    if (error) {
-      toast({
-        title: "Error al cambiar visibilidad",
-        description: error.message,
-        variant: "destructive",
-      });
-      return;
-    }
+  const { error } = await supabase.from("section_settings").upsert(
+    {
+      section_key: "testimonials",
+      is_visible: !sectionVisible,
+    },
+    { onConflict: "section_key" }
+  );
 
-    toast({ title: current ? "Testimonio ocultado" : "Testimonio visible" });
-    await fetchTestimonials();
-  };
+  setSavingSection(false);
+
+  if (error) {
+    toast({
+      title: "Error al cambiar la visibilidad de la sección",
+      description: error.message,
+      variant: "destructive",
+    });
+    return;
+  }
+
+  setSectionVisible(!sectionVisible);
+
+  toast({
+    title: !sectionVisible ? "Sección Testimonios visible" : "Sección Testimonios oculta",
+  });
+};
 
   if (loading) {
     return <div className="text-muted-foreground font-body py-8 text-center">Cargando...</div>;
@@ -223,13 +239,27 @@ const AdminTestimonials = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="font-display text-2xl font-semibold text-foreground">Testimonios</h2>
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+  <h2 className="font-display text-2xl font-semibold text-foreground">Testimonios</h2>
 
-        <Button onClick={handleOpenNew} size="sm" className="gap-2">
-          <Plus size={16} /> Nuevo testimonio
-        </Button>
-      </div>
+  <div className="flex items-center gap-2">
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={toggleSectionVisibility}
+      disabled={savingSection}
+      className="gap-2"
+    >
+      {sectionVisible ? <Eye size={16} /> : <EyeOff size={16} />}
+      {sectionVisible ? "Sección visible" : "Sección oculta"}
+    </Button>
+
+    <Button onClick={handleOpenNew} size="sm" className="gap-2">
+      <Plus size={16} /> Nuevo testimonio
+    </Button>
+  </div>
+</div>
 
       <AnimatePresence>
         {showNew && (

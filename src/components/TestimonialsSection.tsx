@@ -2,6 +2,7 @@ import { motion, useInView } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
 import { Quote } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useSectionVisibility } from "@/hooks/useSectionVisibility";
 
 interface Testimonial {
   id: string;
@@ -14,6 +15,7 @@ const TestimonialsSection = () => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "100px" });
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const { visibility, loaded } = useSectionVisibility();
 
   useEffect(() => {
     supabase
@@ -24,6 +26,7 @@ const TestimonialsSection = () => {
       .then(({ data }) => setTestimonials(data || []));
   }, []);
 
+  if (loaded && visibility.testimonials === false) return null;
   if (testimonials.length === 0) return null;
 
   return (
