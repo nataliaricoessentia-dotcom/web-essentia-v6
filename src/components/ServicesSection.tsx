@@ -8,28 +8,41 @@ import metodoLogo from "@/assets/metodo-essentia-logo.png";
 
 const WHATSAPP_NUMBER = "34666359421";
 
-const serviceImages: Record<string, string> = {
-  Clases: clasesLogo,
-  Cursos: programasLogo,
-  "Método Essentia": metodoLogo,
+const getServiceImage = (serviceName: string) => {
+  const normalized = serviceName.trim().toLowerCase();
+
+  if (normalized === "clases") return clasesLogo;
+
+  if (normalized === "cursos" || normalized === "programas de bienestar") {
+    return programasLogo;
+  }
+
+  if (normalized === "método essentia" || normalized === "metodo essentia") {
+    return metodoLogo;
+  }
+
+  return "";
 };
 
 const serviceWhatsapp: Record<string, string> = {
   Clases: "Hola Natalia, estoy interesada en la clase de",
   Cursos: "Hola Natalia, estoy interesada en el curso",
   "Método Essentia": "Hola Natalia, me gustaría saber más sobre el Método Essentia",
+  "Programas de bienestar": "Hola Natalia, estoy interesada en el programa",
 };
 
 const serviceSubtitles: Record<string, string> = {
   Clases: "Fascia yoga · Respiración funcional · Regulación sistema nervioso",
   Cursos: "Programas específicos · Favorece tu vitalidad",
   "Método Essentia": "Proceso individual personalizado · Transformación desde el origen",
+  "Programas de bienestar": "Programas específicos · Favorece tu vitalidad",
 };
 
 const serviceBtnLabels: Record<string, string> = {
   Clases: "Ver clases",
   Cursos: "Ver cursos",
   "Método Essentia": "Descubrir el método",
+  "Programas de bienestar": "Ver programas",
 };
 
 interface CategoryItem {
@@ -106,14 +119,16 @@ const ServicesSection = () => {
               >
                 <div className="w-full aspect-[4/3] overflow-hidden">
                   <img
-                    src={serviceImages[s.name] || ""}
+                    src={getServiceImage(s.name)}
                     alt={s.name}
                     className="w-full h-full object-contain p-4 transition-transform duration-500 group-hover:scale-105"
                     loading="lazy"
                   />
                 </div>
+
                 <div className="p-8 flex flex-col flex-1">
                   <h3 className="font-display text-xl font-semibold text-foreground mb-1">{s.name}</h3>
+
                   <p className="font-body text-sm text-foreground/60 mb-6">
                     {serviceSubtitles[s.name] || s.description || ""}
                   </p>
@@ -134,12 +149,12 @@ const ServicesSection = () => {
                         exit={{ opacity: 0, height: 0 }}
                         className="mt-6 text-left overflow-hidden"
                       >
-                        {/* Método Essentia - special static content */}
                         {isMetodo ? (
                           <>
                             <p className="font-body text-sm text-foreground/70 leading-relaxed mb-6">
                               Un proceso individualizado y completamente adaptado a ti, enfocado en recuperar la funcionalidad natural de tu organismo desde un enfoque integral. A través de un análisis profundo de tu situación, trabajamos sobre hábitos, alimentación, sistema nervioso, respiración, movimiento y entorno. Es para ti si buscas un cambio real, personalizado y sostenido en el tiempo.
                             </p>
+
                             <a
                               href="https://calendly.com/nataliaessentia"
                               target="_blank"
@@ -157,8 +172,14 @@ const ServicesSection = () => {
                                   onClick={() => setExpandedCat(expandedCat === cat.id ? null : cat.id)}
                                   className="w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors text-left"
                                 >
-                                  <span className="font-body font-medium text-foreground text-sm flex-1">{cat.name}</span>
-                                  {expandedCat === cat.id ? <ChevronUp size={14} className="text-muted-foreground" /> : <ChevronDown size={14} className="text-muted-foreground" />}
+                                  <span className="font-body font-medium text-foreground text-sm flex-1">
+                                    {cat.name}
+                                  </span>
+                                  {expandedCat === cat.id ? (
+                                    <ChevronUp size={14} className="text-muted-foreground" />
+                                  ) : (
+                                    <ChevronDown size={14} className="text-muted-foreground" />
+                                  )}
                                 </button>
 
                                 <AnimatePresence>
@@ -175,6 +196,7 @@ const ServicesSection = () => {
                                             {cat.description}
                                           </p>
                                         )}
+
                                         <a
                                           href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`${serviceWhatsapp[s.name] || "Hola Natalia, estoy interesada en"} ${cat.name}`)}`}
                                           target="_blank"
@@ -192,7 +214,9 @@ const ServicesSection = () => {
                             ))}
                           </div>
                         ) : (
-                          <p className="font-body text-sm text-muted-foreground text-center py-4">Próximamente</p>
+                          <p className="font-body text-sm text-muted-foreground text-center py-4">
+                            Próximamente
+                          </p>
                         )}
                       </motion.div>
                     )}

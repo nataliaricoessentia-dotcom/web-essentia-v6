@@ -27,7 +27,7 @@ const TestimonialsSection = () => {
   if (testimonials.length === 0) return null;
 
   return (
-    <section className="py-24 bg-background">
+    <section id="testimonios" className="py-24 bg-background">
       <div ref={ref} className="max-w-6xl mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 40 }}

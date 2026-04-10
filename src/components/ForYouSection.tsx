@@ -23,7 +23,7 @@ const ForYouSection = () => {
   const isInView = useInView(ref, { once: true, margin: "-80px" });
 
   return (
-    <section className="py-24 bg-background">
+    <section id="es-para-ti" className="py-24 bg-background">
       <div ref={ref} className="max-w-5xl mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
