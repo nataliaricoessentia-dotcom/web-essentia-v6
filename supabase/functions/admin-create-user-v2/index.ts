@@ -20,9 +20,30 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const supabaseUrl = Deno.env.get("SUPABASE_URL");
+const supabaseAnonKey =
+  Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SB_PUBLISHABLE_KEY");
+const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+if (!supabaseUrl) {
+  throw new Error("Falta SUPABASE_URL en los secrets de la Edge Function");
+}
+
+if (!supabaseAnonKey) {
+  throw new Error(
+    "Falta SUPABASE_ANON_KEY o SB_PUBLISHABLE_KEY en los secrets"
+  );
+}
+
+if (!serviceRoleKey) {
+  throw new Error("Falta SUPABASE_SERVICE_ROLE_KEY en los secrets");
+}
+
+console.log("ENV CHECK", {
+  hasUrl: !!supabaseUrl,
+  hasAnonOrPublishable: !!supabaseAnonKey,
+  hasServiceRole: !!serviceRoleKey,
+});
 
     // Verify caller identity
     const callerClient = createClient(supabaseUrl, supabaseAnonKey, {
@@ -110,11 +131,18 @@ Deno.serve(async (req) => {
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (err) {
-    console.error("Error in admin-create-user-v2:", err);
-    return new Response(JSON.stringify({ error: "Error interno del servidor" }), {
+ } catch (err) {
+  const message = err instanceof Error ? err.message : String(err);
+  console.error("Error in admin-create-user-v2:", message);
+
+  return new Response(
+    JSON.stringify({
+      error: "Error interno del servidor",
+      debug: message,
+    }),
+    {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-});
+    }
+  );
+}

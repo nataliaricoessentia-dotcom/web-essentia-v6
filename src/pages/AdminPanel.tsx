@@ -51,6 +51,13 @@ const AdminPanel = () => {
   const [newPhone, setNewPhone] = useState("");
   const [creatingStudent, setCreatingStudent] = useState(false);
 
+  const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [savingStudent, setSavingStudent] = useState(false);
+  const [deletingStudent, setDeletingStudent] = useState<string | null>(null);
+
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) navigate("/login");
   }, [user, authLoading, isAdmin, navigate]);
@@ -109,35 +116,131 @@ const AdminPanel = () => {
       const { data, error } = await supabase.functions.invoke("admin-create-user-v2", {
         body: { email: newEmail, full_name: newName, phone: newPhone },
       });
+
       if (error) {
         toast({ title: "Error al crear alumna", description: error.message, variant: "destructive" });
         setCreatingStudent(false);
         return;
       }
+
       if (data?.error) {
         toast({ title: "Error al crear alumna", description: data.error, variant: "destructive" });
         setCreatingStudent(false);
         return;
       }
 
-      // Check if recovery email was sent successfully
-      if (data?.recovery_sent) {
-        toast({ title: "Alumna creada ✓", description: `Cuenta creada para ${newEmail}. Se ha enviado un email para que establezca su contraseña.` });
+      if (data?.email_sent) {
+        toast({
+          title: "Alumna creada ✓",
+          description: `Cuenta creada para ${newEmail}. Se ha enviado el email para establecer contraseña.`,
+        });
       } else {
         toast({
           title: "Alumna creada (email pendiente)",
-          description: `Cuenta creada para ${newEmail}, pero no se pudo enviar el email de contraseña${data?.recovery_error ? `: ${data.recovery_error}` : ""}. Puede usar "He olvidado mi contraseña" en el login.`,
+          description: `Cuenta creada para ${newEmail}, pero no se pudo enviar el email${data?.email_error ? `: ${data.email_error}` : ""}.`,
           variant: "destructive",
         });
       }
 
-      setNewEmail(""); setNewName(""); setNewPhone("");
+      setNewEmail("");
+      setNewName("");
+      setNewPhone("");
       setShowNewStudent(false);
       await fetchStudents();
     } catch (err: any) {
-      toast({ title: "Error de conexión", description: err?.message || "No se pudo conectar con el servidor", variant: "destructive" });
+      toast({
+        title: "Error de conexión",
+        description: err?.message || "No se pudo conectar con el servidor",
+        variant: "destructive",
+      });
     }
     setCreatingStudent(false);
+  };
+
+  const startEditStudent = (st: StudentRow) => {
+    setEditingStudentId(st.user_id);
+    setEditName(st.full_name || "");
+    setEditEmail(st.email || "");
+    setEditPhone(st.phone || "");
+  };
+
+  const cancelEditStudent = () => {
+    setEditingStudentId(null);
+    setEditName("");
+    setEditEmail("");
+    setEditPhone("");
+  };
+
+  const handleSaveStudent = async () => {
+    if (!editingStudentId) return;
+    setSavingStudent(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-update-user-v2", {
+        body: {
+          user_id: editingStudentId,
+          full_name: editName,
+          email: editEmail,
+          phone: editPhone,
+        },
+      });
+
+      if (error || data?.error) {
+        toast({
+          title: "Error al actualizar alumna",
+          description: error?.message || data?.error || "No se pudo actualizar",
+          variant: "destructive",
+        });
+        setSavingStudent(false);
+        return;
+      }
+
+      toast({ title: "Alumna actualizada ✓" });
+      cancelEditStudent();
+      await fetchStudents();
+    } catch (err: any) {
+      toast({
+        title: "Error de conexión",
+        description: err?.message || "No se pudo conectar con el servidor",
+        variant: "destructive",
+      });
+    }
+
+    setSavingStudent(false);
+  };
+
+  const handleDeleteStudent = async (userId: string, email: string) => {
+    const ok = window.confirm(`¿Seguro que quieres eliminar a ${email}? Esta acción la borrará de Auth y de las tablas relacionadas.`);
+    if (!ok) return;
+
+    setDeletingStudent(userId);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-delete-user-v2", {
+        body: { user_id: userId },
+      });
+
+      if (error || data?.error) {
+        toast({
+          title: "Error al eliminar alumna",
+          description: error?.message || data?.error || "No se pudo eliminar",
+          variant: "destructive",
+        });
+        setDeletingStudent(null);
+        return;
+      }
+
+      toast({ title: "Alumna eliminada ✓" });
+      await fetchStudents();
+    } catch (err: any) {
+      toast({
+        title: "Error de conexión",
+        description: err?.message || "No se pudo conectar con el servidor",
+        variant: "destructive",
+      });
+    }
+
+    setDeletingStudent(null);
   };
 
   const toggleStudentService = async (userId: string, serviceId: string, categoryId: string | null, currentlyActive: boolean) => {
@@ -154,12 +257,15 @@ const AdminPanel = () => {
         .select("id")
         .eq("user_id", userId)
         .eq("service_id", serviceId);
+
       if (categoryId) {
         query = query.eq("category_id", categoryId);
       } else {
         query = query.is("category_id", null);
       }
+
       const { data: existing } = await query.maybeSingle();
+
       if (existing) {
         await supabase.from("student_services").update({ is_active: true }).eq("id", existing.id);
       } else {
@@ -170,6 +276,7 @@ const AdminPanel = () => {
         });
       }
     }
+
     await fetchStudents();
     toast({ title: "Acceso actualizado" });
   };
@@ -226,7 +333,6 @@ const AdminPanel = () => {
           ))}
         </div>
 
-        {/* STUDENTS TAB */}
         {tab === "students" && (
           <div>
             <div className="flex items-center justify-between mb-6">
@@ -291,7 +397,49 @@ const AdminPanel = () => {
                     {expandedStudent === st.user_id && (
                       <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                         <div className="px-4 pb-4">
+                          <div className="mb-4 space-y-3">
+                            {editingStudentId === st.user_id ? (
+                              <>
+                                <div>
+                                  <Label className="font-body">Nombre</Label>
+                                  <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="mt-1" />
+                                </div>
+                                <div>
+                                  <Label className="font-body">Email</Label>
+                                  <Input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} type="email" className="mt-1" />
+                                </div>
+                                <div>
+                                  <Label className="font-body">Teléfono</Label>
+                                  <Input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="mt-1" />
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button size="sm" onClick={handleSaveStudent} disabled={savingStudent}>
+                                    {savingStudent ? "Guardando..." : "Guardar cambios"}
+                                  </Button>
+                                  <Button size="sm" variant="ghost" onClick={cancelEditStudent}>
+                                    Cancelar
+                                  </Button>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="flex gap-2">
+                                <Button size="sm" variant="outline" onClick={() => startEditStudent(st)}>
+                                  Editar datos
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => handleDeleteStudent(st.user_id, st.email)}
+                                  disabled={deletingStudent === st.user_id}
+                                >
+                                  {deletingStudent === st.user_id ? "Eliminando..." : "Eliminar alumna"}
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+
                           {st.phone && <p className="text-sm text-muted-foreground font-body mb-3">📱 {st.phone}</p>}
+
                           <p className="text-sm font-body font-medium text-foreground mb-2">Gestionar acceso:</p>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {servicesData.map((svc) =>
@@ -299,6 +447,7 @@ const AdminPanel = () => {
                                 const active = st.services.some(
                                   (ss) => ss.service_name === svc.name && ss.category_name === cat.name && ss.is_active
                                 );
+
                                 return (
                                   <button
                                     key={`${svc.id}-${cat.id}`}
@@ -329,22 +478,11 @@ const AdminPanel = () => {
           </div>
         )}
 
-        {/* SERVICES TAB - Full CRUD */}
         {tab === "services" && <AdminServiceManager />}
-
-        {/* PRODUCTS TAB */}
         {tab === "products" && <AdminProducts />}
-
-        {/* TESTIMONIALS TAB */}
         {tab === "testimonials" && <AdminTestimonials />}
-
-        {/* RESOURCES TAB */}
         {tab === "resources" && <AdminResources />}
-
-        {/* LEADS TAB */}
         {tab === "leads" && <AdminLeads />}
-
-        {/* SECTIONS TAB */}
         {tab === "sections" && <AdminSections />}
       </main>
     </div>
