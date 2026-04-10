@@ -10,10 +10,14 @@ import metodoLogo from "@/assets/metodo-essentia-con-fondo.png";
 import fasciaYogaLogo from "@/assets/fascia-yoga-logo.png";
 import endoesenciaLogo from "@/assets/endoesencia-logo.png";
 
-const serviceImages: Record<string, string> = {
-  "Clases": clasesLogo,
-  "Cursos": programasLogo,
-  "Método Essentia": metodoLogo,
+const getServiceImage = (serviceName: string) => {
+  const normalized = serviceName.trim().toLowerCase();
+
+  if (normalized === "clases") return clasesLogo;
+  if (normalized === "cursos" || normalized === "programas de bienestar") return programasLogo;
+  if (normalized === "método essentia" || normalized === "metodo essentia") return metodoLogo;
+
+  return "";
 };
 
 const categoryImages: Record<string, string> = {
@@ -212,9 +216,9 @@ const StudentDashboard = () => {
                 onClick={() => setExpandedService(expandedService === svc.id ? null : svc.id)}
                 className="w-full flex items-center gap-5 p-5 text-left hover:bg-muted/50 cursor-pointer transition-colors"
               >
-                {serviceImages[svc.name] && (
+                {getServiceImage(svc.name) && (
                   <img
-                    src={serviceImages[svc.name]}
+                    src={getServiceImage(svc.name)}
                     alt={svc.name}
                     className="w-24 h-24 rounded-2xl object-cover shrink-0 shadow-sm"
                   />
